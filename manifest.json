@@ -1,0 +1,17 @@
+{
+  "short_name": "FocusChat",
+  "name": "FocusChat - Distraction-Free Study Rooms",
+  "icons": [
+    {
+      "src": "1000038004.jpg",
+      "type": "image/jpeg",
+      "sizes": "370x370",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#0f172a",
+  "theme_color": "#0d9488",
+  "display": "standalone",
+  "orientation": "portrait"
+}
