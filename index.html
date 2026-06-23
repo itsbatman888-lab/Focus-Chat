@@ -1,30 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <!-- PWA Capabilities & App Icon Link -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d9488">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="1000038004.jpg">
-
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker active.'))
-                .catch(err => console.log('Service Worker setup error:', err));
-        });
-    }
-</script>
- <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusChat - Zero Distraction Study Rooms</title>
+    
+    <!-- PWA Capabilities & App Icon Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="1000038004.jpg">
+
+    <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS for effortless P2P connections -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script>
+        // Register the Service Worker for PWA installation support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker active.'))
+                    .catch(err => console.log('Service Worker setup error:', err));
+            });
+        }
+    </script>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans h-screen flex flex-col justify-between">
 
+    <!-- WELCOME SCREEN -->
     <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
         <div class="text-center">
             <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
@@ -43,6 +49,7 @@
         </div>
     </div>
 
+    <!-- SETUP FORM SCREEN (Hidden by default) -->
     <div id="form-screen" class="hidden flex-1 flex flex-col items-center justify-center p-6">
         <div class="w-full max-w-sm bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 space-y-4">
             <h2 id="form-title" class="text-xl font-bold text-slate-200">Setup Room</h2>
@@ -69,7 +76,9 @@
         </div>
     </div>
 
+    <!-- CHAT ROOM SCREEN (Hidden by default) -->
     <div id="chat-screen" class="hidden flex-1 flex flex-col h-full max-w-2xl w-full mx-auto">
+        <!-- Room Header -->
         <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80 backdrop-blur">
             <div>
                 <span id="room-display-tag" class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-md text-emerald-400 border border-slate-700">ROOM: Loading...</span>
@@ -80,9 +89,12 @@
             </div>
         </div>
 
+        <!-- Messages Area -->
         <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-            </div>
+            <!-- System messages & user chats dynamic inject -->
+        </div>
 
+        <!-- Input Box Area -->
         <div class="p-4 border-t border-slate-800 bg-slate-900">
             <div class="flex items-center space-x-2 bg-slate-800 border border-slate-700 rounded-xl p-1 focus-within:border-teal-500">
                 <input type="text" id="message-input" placeholder="Type an encrypted message..." class="flex-1 bg-transparent px-3 py-2 text-slate-100 focus:outline-none text-sm" disabled>
@@ -146,8 +158,6 @@
         }
 
         function initiateP2P() {
-            // Using the Room Code directly as the unique PeerJS ID for the host.
-            // When joining, the guest connects directly to this ID.
             if (mode === 'create') {
                 myPeer = new Peer(roomCode);
                 
@@ -167,7 +177,6 @@
                     }
                 });
             } else {
-                // Joiner creates a dynamic random ID for themselves, then targets the host roomCode
                 myPeer = new Peer();
                 
                 myPeer.on('open', (id) => {
@@ -184,7 +193,6 @@
                 document.getElementById('message-input').disabled = false;
                 document.getElementById('send-btn').disabled = false;
                 
-                // Send basic greeting with name
                 connection.send({ type: 'handshake', name: myName });
             });
 
@@ -211,7 +219,6 @@
             const text = input.value.trim();
             if(!text) return;
 
-            // In WebRTC P2P, strings sent via DataChannels are TLS-encrypted out of the box. 
             connection.send({ type: 'chat', sender: myName, text: text });
             appendMessage('You', text, true);
             input.value = '';
