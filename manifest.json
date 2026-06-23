@@ -3,8 +3,8 @@
   "name": "FocusChat - Distraction-Free Study Rooms",
   "icons": [
     {
-      "src": "Focus chat.png",
-      "type": "image/jpeg",
+      "src": "logo.png",
+      "type": "image/png",
       "sizes": "370x370",
       "purpose": "any"
     }
