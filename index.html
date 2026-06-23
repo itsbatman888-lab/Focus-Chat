@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusChat - Zero Distraction Study Rooms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans h-screen flex flex-col justify-between">
+
+    <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
+        <div class="text-center">
+            <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+                FocusChat
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm">No accounts. No logs. Pure peer-to-peer study sessions.</p>
+        </div>
+        
+        <div class="w-full max-w-sm space-y-4">
+            <button onclick="showForm('create')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-4 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20">
+                🚀 Create Study Chat
+            </button>
+            <button onclick="showForm('join')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-3 px-4 rounded-xl transition duration-200">
+                📥 Join Existing Chat
+            </button>
+        </div>
+    </div>
+
+    <div id="form-screen" class="hidden flex-1 flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-sm bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 space-y-4">
+            <h2 id="form-title" class="text-xl font-bold text-slate-200">Setup Room</h2>
+            
+            <div class="space-y-1">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Your Display Name</label>
+                <input type="text" id="username-input" placeholder="e.g., Alex" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Room Code Key</label>
+                <div class="flex gap-2">
+                    <input type="text" id="room-input" placeholder="e.g., math-sprint-202" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-teal-500">
+                    <button id="gen-btn" onclick="generateRandomCode()" class="hidden bg-slate-700 hover:bg-slate-600 px-3 rounded-xl text-sm">Gen</button>
+                </div>
+            </div>
+
+            <button onclick="submitSetup()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium py-3 px-4 rounded-xl transition duration-200 mt-2">
+                Launch Session
+            </button>
+            <button onclick="goBackToWelcome()" class="w-full text-xs text-slate-500 hover:text-slate-400 text-center block mt-2">
+                ← Go back
+            </button>
+        </div>
+    </div>
+
+    <div id="chat-screen" class="hidden flex-1 flex flex-col h-full max-w-2xl w-full mx-auto">
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80 backdrop-blur">
+            <div>
+                <span id="room-display-tag" class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded-md text-emerald-400 border border-slate-700">ROOM: Loading...</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs text-slate-400">
+                <span id="status-dot" class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span id="status-text">Waiting for peer...</span>
+            </div>
+        </div>
+
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+            </div>
+
+        <div class="p-4 border-t border-slate-800 bg-slate-900">
+            <div class="flex items-center space-x-2 bg-slate-800 border border-slate-700 rounded-xl p-1 focus-within:border-teal-500">
+                <input type="text" id="message-input" placeholder="Type an encrypted message..." class="flex-1 bg-transparent px-3 py-2 text-slate-100 focus:outline-none text-sm" disabled>
+                <button onclick="sendMessage()" id="send-btn" class="bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white p-2 px-4 rounded-lg text-sm font-medium transition" disabled>
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = ''; // 'create' or 'join'
+        let myPeer = null;
+        let connection = null;
+        let myName = '';
+        let roomCode = '';
+
+        function showForm(actionType) {
+            mode = actionType;
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('form-screen').classList.remove('hidden');
+            
+            const title = document.getElementById('form-title');
+            const genBtn = document.getElementById('gen-btn');
+            
+            if(mode === 'create') {
+                title.innerText = "🚀 Create New Session";
+                genBtn.classList.remove('hidden');
+            } else {
+                title.innerText = "📥 Join Study Session";
+                genBtn.classList.add('hidden');
+            }
+        }
+
+        function goBackToWelcome() {
+            document.getElementById('form-screen').classList.add('hidden');
+            document.getElementById('welcome-screen').classList.remove('hidden');
+        }
+
+        function generateRandomCode() {
+            const words = ['focus', 'sprint', 'deep', 'mind', 'zone', 'alpha', 'brain', 'logic'];
+            const num = Math.floor(100 + Math.random() * 900);
+            const choice = words[Math.floor(Math.random() * words.length)] + '-' + words[Math.floor(Math.random() * words.length)];
+            document.getElementById('room-input').value = `${choice}-${num}`;
+        }
+
+        function submitSetup() {
+            myName = document.getElementById('username-input').value.trim();
+            roomCode = document.getElementById('room-input').value.trim().toLowerCase();
+
+            if(!myName || !roomCode) {
+                alert("Please fill in both fields!");
+                return;
+            }
+
+            document.getElementById('form-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.remove('hidden');
+            document.getElementById('room-display-tag').innerText = `ROOM: ${roomCode}`;
+
+            initiateP2P();
+        }
+
+        function initiateP2P() {
+            // Using the Room Code directly as the unique PeerJS ID for the host.
+            // When joining, the guest connects directly to this ID.
+            if (mode === 'create') {
+                myPeer = new Peer(roomCode);
+                
+                myPeer.on('open', (id) => {
+                    logSystemMessage("Room ready. Share your code with your study partner!");
+                });
+
+                myPeer.on('connection', (conn) => {
+                    connection = conn;
+                    setupConnectionListeners();
+                });
+                
+                myPeer.on('error', (err) => {
+                    if(err.type === 'unavailable-id') {
+                        alert("This room code is already active! Please try a different code.");
+                        window.location.reload();
+                    }
+                });
+            } else {
+                // Joiner creates a dynamic random ID for themselves, then targets the host roomCode
+                myPeer = new Peer();
+                
+                myPeer.on('open', (id) => {
+                    connection = myPeer.connect(roomCode);
+                    setupConnectionListeners();
+                });
+            }
+        }
+
+        function setupConnectionListeners() {
+            connection.on('open', () => {
+                document.getElementById('status-dot').className = "h-2 w-2 rounded-full bg-emerald-500";
+                document.getElementById('status-text').innerText = "Connected";
+                document.getElementById('message-input').disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                
+                // Send basic greeting with name
+                connection.send({ type: 'handshake', name: myName });
+            });
+
+            connection.on('data', (data) => {
+                if(data.type === 'handshake') {
+                    logSystemMessage(`⚡ ${data.name} joined the study session.`);
+                }
+                if(data.type === 'chat') {
+                    appendMessage(data.sender, data.text, false);
+                }
+            });
+
+            connection.on('close', () => {
+                document.getElementById('status-dot').className = "h-2 w-2 rounded-full bg-rose-500";
+                document.getElementById('status-text').innerText = "Partner disconnected";
+                document.getElementById('message-input').disabled = true;
+                document.getElementById('send-btn').disabled = true;
+                logSystemMessage("❌ Partner left the room.");
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            // In WebRTC P2P, strings sent via DataChannels are TLS-encrypted out of the box. 
+            connection.send({ type: 'chat', sender: myName, text: text });
+            appendMessage('You', text, true);
+            input.value = '';
+        }
+
+        function appendMessage(sender, text, isMe) {
+            const container = document.getElementById('messages-container');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+            
+            const msgEl = document.createElement('div');
+            msgEl.className = `max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                isMe ? 'bg-teal-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-100 rounded-bl-none'
+            }`;
+            
+            const nameLabel = document.createElement('span');
+            nameLabel.className = "text-[10px] text-slate-500 mb-1 px-1";
+            nameLabel.innerText = isMe ? 'You' : sender;
+
+            msgEl.innerText = text;
+            
+            wrapper.appendChild(nameLabel);
+            wrapper.appendChild(msgEl);
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function logSystemMessage(msg) {
+            const container = document.getElementById('messages-container');
+            const el = document.createElement('div');
+            el.className = "text-center text-xs text-slate-500 my-2 font-mono italic";
+            el.innerText = msg;
+            container.appendChild(el);
+        }
+    </script>
+</body>
+</html>
