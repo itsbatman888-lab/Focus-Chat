@@ -2,7 +2,7 @@ const CACHE_NAME = 'focuschat-v1';
 const ASSETS = [
   'index.html',
   'manifest.json',
-  'Focus chat.png'
+  'logo.png'
 ];
 
 self.addEventListener('install', (e) => {
